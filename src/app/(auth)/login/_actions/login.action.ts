@@ -30,6 +30,21 @@ export async function checkEmailAction(email: string): Promise<CheckEmailResult>
 
 // ── Step 2 — sign in ──────────────────────────────────────────────────────────
 
+const LOGIN_ERROR_MAP: Record<string, string> = {
+  'invalid credentials':   'The password you entered is incorrect. Please try again.',
+  'account is inactive':   'Your account has been deactivated. Please contact your administrator.',
+  'account not found':     'No account found with that email address.',
+  'too many requests':     'Too many sign-in attempts. Please wait a few minutes and try again.',
+}
+
+function friendlyLoginError(raw: string): string {
+  const key = raw.toLowerCase()
+  for (const [pattern, message] of Object.entries(LOGIN_ERROR_MAP)) {
+    if (key.includes(pattern)) return message
+  }
+  return 'We were unable to sign you in. Please check your credentials and try again.'
+}
+
 const PasswordSchema = z
   .string()
   .min(6, { message: 'Password must be at least 6 characters.' })
@@ -53,7 +68,7 @@ export async function loginAction(
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : 'Incorrect password. Please try again.',
+      error: friendlyLoginError(err instanceof Error ? err.message : ''),
     }
   }
 
